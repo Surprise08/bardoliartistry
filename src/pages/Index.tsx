@@ -199,9 +199,9 @@ const Index = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <ParticleBackground />
       
-      {/* Gradient overlays */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
+      {/* Space gradient overlays */}
+      <div className="fixed inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/8 via-transparent to-transparent pointer-events-none" />
 
       <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:py-12">
         {currentSlide > 0 && currentSlide < 9 && (
@@ -392,7 +392,7 @@ const Index = () => {
             </div>
             <button
               onClick={checkPassword}
-              className="w-full py-3 rounded-full bg-primary text-primary-foreground font-body font-medium hover:bg-primary/90 transition-colors glow-gold-sm"
+              className="w-full py-3 rounded-full bg-primary text-primary-foreground font-body font-medium hover:bg-primary/90 transition-colors glow-star"
             >
               Unlock
             </button>
