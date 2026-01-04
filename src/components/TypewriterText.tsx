@@ -31,10 +31,10 @@ const TypewriterText = ({ text, speed = 30, onComplete, className = '' }: Typewr
   }, [text, speed, onComplete]);
 
   return (
-    <div className={`font-body ${className}`}>
-      <span className="whitespace-pre-wrap">{displayedText}</span>
+    <div className={`font-mono ${className}`}>
+      <span className="whitespace-pre-wrap text-foreground/90">{displayedText}</span>
       {!isComplete && (
-        <span className="inline-block w-0.5 h-5 bg-primary ml-1 animate-blink" />
+        <span className="inline-block w-2 h-5 bg-foreground/80 ml-1 animate-blink" />
       )}
     </div>
   );

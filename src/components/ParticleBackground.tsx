@@ -3,10 +3,9 @@ import { useEffect, useRef } from 'react';
 interface Star {
   x: number;
   y: number;
+  z: number;
   size: number;
-  speedX: number;
-  speedY: number;
-  opacity: number;
+  baseOpacity: number;
   twinkleSpeed: number;
   twinklePhase: number;
 }
@@ -16,6 +15,7 @@ const ParticleBackground = () => {
   const starsRef = useRef<Star[]>([]);
   const animationRef = useRef<number>();
   const timeRef = useRef(0);
+  const mouseRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,98 +31,108 @@ const ParticleBackground = () => {
 
     const createStars = () => {
       const stars: Star[] = [];
-      const count = Math.min(200, Math.floor((window.innerWidth * window.innerHeight) / 8000));
+      // Create many small detailed stars
+      const count = Math.min(400, Math.floor((window.innerWidth * window.innerHeight) / 3000));
       
       for (let i = 0; i < count; i++) {
         stars.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 2 + 0.5,
-          speedX: (Math.random() - 0.5) * 0.15,
-          speedY: (Math.random() - 0.5) * 0.15,
-          opacity: Math.random() * 0.8 + 0.2,
-          twinkleSpeed: Math.random() * 0.02 + 0.01,
+          z: Math.random() * 3 + 1, // Depth for parallax (1-4)
+          size: Math.random() * 1.2 + 0.3, // Small stars 0.3-1.5px
+          baseOpacity: Math.random() * 0.6 + 0.3,
+          twinkleSpeed: Math.random() * 0.015 + 0.005,
           twinklePhase: Math.random() * Math.PI * 2,
         });
       }
       starsRef.current = stars;
     };
 
-    const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, opacity: number) => {
-      // Draw star with glow
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
-      gradient.addColorStop(0, `hsla(200, 80%, 85%, ${opacity})`);
-      gradient.addColorStop(0.3, `hsla(200, 70%, 70%, ${opacity * 0.5})`);
-      gradient.addColorStop(1, `hsla(200, 60%, 60%, 0)`);
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = {
+        x: (e.clientX - window.innerWidth / 2) / window.innerWidth,
+        y: (e.clientY - window.innerHeight / 2) / window.innerHeight,
+      };
+    };
+
+    const drawStar = (
+      ctx: CanvasRenderingContext2D, 
+      x: number, 
+      y: number, 
+      size: number, 
+      opacity: number,
+      isTiffany: boolean = false
+    ) => {
+      if (isTiffany) {
+        // Rare tiffany-colored star with subtle glow
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 4);
+        gradient.addColorStop(0, `hsla(174, 72%, 70%, ${opacity})`);
+        gradient.addColorStop(0.5, `hsla(174, 72%, 56%, ${opacity * 0.3})`);
+        gradient.addColorStop(1, `hsla(174, 72%, 56%, 0)`);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, size * 4, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
       
-      ctx.beginPath();
-      ctx.arc(x, y, size * 3, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-      
-      // Core of the star
+      // White star core
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(200, 100%, 95%, ${opacity})`;
+      ctx.fillStyle = isTiffany 
+        ? `hsla(174, 50%, 90%, ${opacity})` 
+        : `hsla(0, 0%, 100%, ${opacity})`;
       ctx.fill();
+      
+      // Subtle cross flare for larger stars
+      if (size > 0.8) {
+        ctx.strokeStyle = `hsla(0, 0%, 100%, ${opacity * 0.3})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x - size * 2, y);
+        ctx.lineTo(x + size * 2, y);
+        ctx.moveTo(x, y - size * 2);
+        ctx.lineTo(x, y + size * 2);
+        ctx.stroke();
+      }
     };
 
     const animate = () => {
       timeRef.current += 0.016;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw nebula effect in background
-      const nebulaGradient1 = ctx.createRadialGradient(
-        canvas.width * 0.2, canvas.height * 0.3, 0,
-        canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.4
-      );
-      nebulaGradient1.addColorStop(0, 'hsla(270, 60%, 40%, 0.08)');
-      nebulaGradient1.addColorStop(1, 'hsla(270, 60%, 20%, 0)');
-      ctx.fillStyle = nebulaGradient1;
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const nebulaGradient2 = ctx.createRadialGradient(
-        canvas.width * 0.8, canvas.height * 0.7, 0,
-        canvas.width * 0.8, canvas.height * 0.7, canvas.width * 0.5
-      );
-      nebulaGradient2.addColorStop(0, 'hsla(200, 70%, 50%, 0.06)');
-      nebulaGradient2.addColorStop(1, 'hsla(200, 60%, 30%, 0)');
-      ctx.fillStyle = nebulaGradient2;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Parallax offset based on mouse
+      const parallaxX = mouseRef.current.x * 20;
+      const parallaxY = mouseRef.current.y * 20;
 
-      starsRef.current.forEach((star) => {
-        // Move stars
-        star.x += star.speedX;
-        star.y += star.speedY;
-
-        // Wrap around edges
-        if (star.x < 0) star.x = canvas.width;
-        if (star.x > canvas.width) star.x = 0;
-        if (star.y < 0) star.y = canvas.height;
-        if (star.y > canvas.height) star.y = 0;
+      starsRef.current.forEach((star, index) => {
+        // Parallax effect - deeper stars move less
+        const depthFactor = star.z / 4;
+        const offsetX = parallaxX * depthFactor;
+        const offsetY = parallaxY * depthFactor;
+        
+        let drawX = star.x + offsetX;
+        let drawY = star.y + offsetY;
+        
+        // Wrap around screen edges
+        if (drawX < 0) drawX += canvas.width;
+        if (drawX > canvas.width) drawX -= canvas.width;
+        if (drawY < 0) drawY += canvas.height;
+        if (drawY > canvas.height) drawY -= canvas.height;
 
         // Twinkle effect
         const twinkle = Math.sin(timeRef.current * star.twinkleSpeed * 100 + star.twinklePhase);
-        const currentOpacity = star.opacity * (0.6 + 0.4 * twinkle);
-
-        drawStar(ctx, star.x, star.y, star.size, currentOpacity);
-      });
-
-      // Draw shooting stars occasionally
-      if (Math.random() < 0.002) {
-        const shootingX = Math.random() * canvas.width;
-        const shootingY = Math.random() * canvas.height * 0.5;
+        const currentOpacity = star.baseOpacity * (0.5 + 0.5 * twinkle);
         
-        ctx.beginPath();
-        ctx.moveTo(shootingX, shootingY);
-        ctx.lineTo(shootingX + 80, shootingY + 40);
-        const shootGradient = ctx.createLinearGradient(shootingX, shootingY, shootingX + 80, shootingY + 40);
-        shootGradient.addColorStop(0, 'hsla(200, 100%, 90%, 0.8)');
-        shootGradient.addColorStop(1, 'hsla(200, 100%, 90%, 0)');
-        ctx.strokeStyle = shootGradient;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
+        // Size varies with depth (closer = bigger)
+        const sizeWithDepth = star.size * (0.5 + star.z * 0.25);
+
+        // Only ~3% of stars get tiffany color (very rare accent)
+        const isTiffany = index % 35 === 0;
+        
+        drawStar(ctx, drawX, drawY, sizeWithDepth, currentOpacity, isTiffany);
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -135,12 +145,14 @@ const ParticleBackground = () => {
       resizeCanvas();
       createStars();
     });
+    window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 

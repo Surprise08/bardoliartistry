@@ -11,17 +11,17 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="block text-sm font-medium text-foreground/80 font-body">
+          <label className="block text-sm font-medium text-foreground/70 font-body uppercase tracking-wider">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={cn(
-            "w-full px-4 py-3 rounded-xl",
-            "bg-secondary/50 border border-border/50",
-            "text-foreground placeholder:text-muted-foreground",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50",
+            "w-full px-4 py-3 rounded-lg",
+            "bg-secondary/30 border border-border/40",
+            "text-foreground placeholder:text-muted-foreground/50",
+            "focus:outline-none focus:ring-1 focus:ring-accent/50 focus:border-accent/50",
             "transition-all duration-300",
             "font-body text-base",
             error && "border-destructive/50 focus:ring-destructive/50",
