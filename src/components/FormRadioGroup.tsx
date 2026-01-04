@@ -1,53 +1,49 @@
 import { cn } from '@/lib/utils';
 
-interface FormRadioGroupProps {
-  label?: string;
-  options: { value: string; label: string }[];
-  value?: string;
-  onChange: (value: string) => void;
-  error?: string;
+interface RadioOption {
+  value: string;
+  label: string;
 }
 
-const FormRadioGroup = ({ label, options, value, onChange, error }: FormRadioGroupProps) => {
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-  };
+interface FormRadioGroupProps {
+  options: RadioOption[];
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  name?: string;
+}
 
+const FormRadioGroup = ({ options, value, onChange, error, name = 'radio-group' }: FormRadioGroupProps) => {
   return (
-    <div className="space-y-4">
-      {label && (
-        <label className="block text-sm font-medium text-foreground/80 font-body">
-          {label}
-        </label>
-      )}
-      <div className="grid gap-3">
+    <div className="space-y-3">
+      <div className="grid gap-2">
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
-            onClick={() => handleSelect(option.value)}
+            onClick={() => onChange(option.value)}
             className={cn(
-              "flex items-center gap-3 p-4 rounded-xl cursor-pointer text-left w-full",
-              "bg-secondary/30 border border-border/30",
-              "hover:bg-secondary/50 hover:border-primary/30",
-              "transition-all duration-300",
-              value === option.value && "bg-primary/15 border-primary/50 glow-star"
+              "w-full flex items-center gap-3 p-4 rounded-lg",
+              "border transition-all duration-300",
+              "text-left font-body",
+              value === option.value
+                ? "bg-secondary/50 border-accent/50 text-foreground"
+                : "bg-secondary/20 border-border/30 text-foreground/70 hover:bg-secondary/30 hover:border-border/50"
             )}
           >
             <div
               className={cn(
-                "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                "transition-all duration-300",
+                "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all",
                 value === option.value
-                  ? "border-primary bg-primary"
+                  ? "border-accent bg-accent"
                   : "border-muted-foreground/50"
               )}
             >
               {value === option.value && (
-                <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                <div className="w-1.5 h-1.5 rounded-full bg-accent-foreground" />
               )}
             </div>
-            <span className="font-body text-foreground/90">{option.label}</span>
+            <span className="text-sm">{option.label}</span>
           </button>
         ))}
       </div>

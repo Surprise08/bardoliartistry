@@ -25,22 +25,22 @@ const NavigationButtons = ({
   submitLabel = "Submit"
 }: NavigationButtonsProps) => {
   const buttonBase = cn(
-    "flex items-center gap-2 px-6 py-3 rounded-full",
-    "font-body font-medium text-sm",
+    "flex items-center gap-2 px-6 py-3 rounded-lg",
+    "font-body font-medium text-sm uppercase tracking-wider",
     "transition-all duration-300",
     "disabled:opacity-50 disabled:cursor-not-allowed"
   );
 
   return (
-    <div className="flex items-center justify-between mt-8 pt-6 border-t border-border/30">
+    <div className="flex items-center justify-between mt-8 pt-6 border-t border-border/20">
       {showPrev && onPrev ? (
         <button
           type="button"
           onClick={onPrev}
           className={cn(
             buttonBase,
-            "bg-secondary/50 text-foreground/80",
-            "hover:bg-secondary hover:text-foreground"
+            "bg-secondary/30 text-foreground/70 border border-border/30",
+            "hover:bg-secondary/50 hover:text-foreground"
           )}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -57,12 +57,12 @@ const NavigationButtons = ({
           disabled={isLoading}
           className={cn(
             buttonBase,
-            "bg-primary text-primary-foreground",
-            "hover:bg-primary/90 glow-gold-sm hover:glow-gold"
+            "bg-foreground text-background",
+            "hover:bg-foreground/90"
           )}
         >
           {isLoading ? (
-            <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
           ) : (
             <Check className="w-4 h-4" />
           )}
@@ -74,8 +74,8 @@ const NavigationButtons = ({
           onClick={onNext}
           className={cn(
             buttonBase,
-            "bg-primary text-primary-foreground",
-            "hover:bg-primary/90 glow-gold-sm hover:glow-gold"
+            "bg-foreground text-background",
+            "hover:bg-foreground/90"
           )}
         >
           {nextLabel}

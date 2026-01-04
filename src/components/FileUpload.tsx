@@ -1,119 +1,114 @@
-import { useRef, useState } from 'react';
-import { Upload, Image as ImageIcon, X } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Upload, X, Image } from 'lucide-react';
 
 interface FileUploadProps {
-  label?: string;
-  value?: File | null;
+  value: File | null;
   onChange: (file: File | null) => void;
-  accept?: string;
   error?: string;
+  accept?: string;
 }
 
-const FileUpload = ({ label, value, onChange, accept = "image/*", error }: FileUploadProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+const FileUpload = ({ value, onChange, error, accept = "image/*" }: FileUploadProps) => {
+  const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = (file: File | null) => {
+  const handleFile = useCallback((file: File) => {
     onChange(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
-    } else {
-      setPreview(null);
-    }
-  };
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  }, [onChange]);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      handleFileChange(file);
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
     }
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-  };
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  }, [handleFile]);
 
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  }, [handleFile]);
 
-  const clearFile = () => {
-    handleFileChange(null);
-    if (inputRef.current) inputRef.current.value = '';
-  };
+  const removeFile = useCallback(() => {
+    onChange(null);
+    setPreview(null);
+  }, [onChange]);
 
   return (
     <div className="space-y-2">
-      {label && (
-        <label className="block text-sm font-medium text-foreground/80 font-body">
-          {label}
+      {preview ? (
+        <div className="relative rounded-lg overflow-hidden border border-border/40 bg-secondary/20">
+          <img 
+            src={preview} 
+            alt="Preview" 
+            className="w-full h-48 object-cover opacity-90"
+          />
+          <button
+            type="button"
+            onClick={removeFile}
+            className="absolute top-2 right-2 p-2 rounded-full bg-background/80 text-foreground/80 hover:bg-background hover:text-foreground transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <label
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={cn(
+            "flex flex-col items-center justify-center",
+            "w-full h-48 rounded-lg",
+            "border-2 border-dashed transition-all duration-300 cursor-pointer",
+            dragActive
+              ? "border-accent/50 bg-accent/5"
+              : "border-border/40 bg-secondary/20 hover:border-border/60 hover:bg-secondary/30",
+            error && "border-destructive/50"
+          )}
+        >
+          <input
+            type="file"
+            accept={accept}
+            onChange={handleChange}
+            className="hidden"
+          />
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            {dragActive ? (
+              <Image className="w-10 h-10 text-accent" />
+            ) : (
+              <Upload className="w-10 h-10" />
+            )}
+            <div className="text-center">
+              <p className="text-sm font-body">
+                {dragActive ? "Drop your image here" : "Click or drag to upload"}
+              </p>
+              <p className="text-xs mt-1 text-muted-foreground/60">
+                JPG, PNG, or GIF
+              </p>
+            </div>
+          </div>
         </label>
       )}
-      
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        className={cn(
-          "relative rounded-xl border-2 border-dashed cursor-pointer",
-          "transition-all duration-300 overflow-hidden",
-          "min-h-[160px] flex items-center justify-center",
-          isDragging
-            ? "border-primary bg-primary/10"
-            : "border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50",
-          error && "border-destructive/50"
-        )}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept={accept}
-          onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-          className="hidden"
-        />
-
-        {preview ? (
-          <div className="relative w-full h-full min-h-[160px]">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-full object-cover"
-            />
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                clearFile();
-              }}
-              className="absolute top-2 right-2 p-2 rounded-full bg-background/80 hover:bg-background transition-colors"
-            >
-              <X className="w-4 h-4 text-foreground" />
-            </button>
-          </div>
-        ) : (
-          <div className="text-center p-6">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-              {isDragging ? (
-                <ImageIcon className="w-6 h-6 text-primary" />
-              ) : (
-                <Upload className="w-6 h-6 text-primary" />
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground font-body">
-              {isDragging ? "Drop your image here" : "Click or drag to upload"}
-            </p>
-          </div>
-        )}
-      </div>
-
       {error && (
         <p className="text-sm text-destructive font-body">{error}</p>
       )}
