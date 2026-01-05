@@ -12,6 +12,18 @@ const TypewriterText = ({ text, speed = 30, onComplete, className = '', enableSo
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const hasCompletedRef = useRef(false);
+  const textRef = useRef(text);
+
+  // Reset when text changes
+  useEffect(() => {
+    if (textRef.current !== text) {
+      textRef.current = text;
+      hasCompletedRef.current = false;
+      setDisplayedText('');
+      setIsComplete(false);
+    }
+  }, [text]);
 
   const playTypeSound = useCallback(() => {
     if (!enableSound) return;
@@ -31,22 +43,41 @@ const TypewriterText = ({ text, speed = 30, onComplete, className = '', enableSo
       gainNode.connect(ctx.destination);
       
       filter.type = 'highpass';
-      filter.frequency.setValueAtTime(2000, ctx.currentTime);
+      filter.frequency.setValueAtTime(3000, ctx.currentTime);
       
+      // Authentic typewriter sound - mechanical click with metal strike
       oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(120 + Math.random() * 80, ctx.currentTime);
+      const baseFreq = 80 + Math.random() * 40;
+      oscillator.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, ctx.currentTime + 0.02);
       
-      gainNode.gain.setValueAtTime(0.02, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
+      gainNode.gain.setValueAtTime(0.04, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
       
       oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.025);
+      oscillator.stop(ctx.currentTime + 0.04);
+      
+      // Add a secondary clack sound
+      const clack = ctx.createOscillator();
+      const clackGain = ctx.createGain();
+      clack.connect(clackGain);
+      clackGain.connect(ctx.destination);
+      
+      clack.type = 'sawtooth';
+      clack.frequency.setValueAtTime(200 + Math.random() * 100, ctx.currentTime);
+      clackGain.gain.setValueAtTime(0.02, ctx.currentTime);
+      clackGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.015);
+      
+      clack.start(ctx.currentTime + 0.005);
+      clack.stop(ctx.currentTime + 0.025);
     } catch (e) {
       // Silently fail
     }
   }, [enableSound]);
 
   useEffect(() => {
+    if (hasCompletedRef.current) return;
+    
     setDisplayedText('');
     setIsComplete(false);
     let index = 0;
@@ -62,18 +93,27 @@ const TypewriterText = ({ text, speed = 30, onComplete, className = '', enableSo
       } else {
         clearInterval(interval);
         setIsComplete(true);
-        onComplete?.();
+        if (!hasCompletedRef.current) {
+          hasCompletedRef.current = true;
+          onComplete?.();
+        }
       }
     }, speed);
 
     return () => {
       clearInterval(interval);
+    };
+  }, [text, speed, onComplete, playTypeSound]);
+
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(() => {});
         audioContextRef.current = null;
       }
     };
-  }, [text, speed, onComplete, playTypeSound]);
+  }, []);
 
   return (
     <div className={`font-mono ${className}`}>
