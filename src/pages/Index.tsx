@@ -9,6 +9,8 @@ import FileUpload from '@/components/FileUpload';
 import NavigationButtons from '@/components/NavigationButtons';
 import ProgressIndicator from '@/components/ProgressIndicator';
 import RotationPrompt from '@/components/RotationPrompt';
+import FixedLogo from '@/components/FixedLogo';
+import SponsorBadge from '@/components/SponsorBadge';
 import { Lock, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSoundEffects from '@/hooks/useSoundEffects';
@@ -70,7 +72,9 @@ const Index = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showShake, setShowShake] = useState(false);
   const [welcomeTypingComplete, setWelcomeTypingComplete] = useState(false);
+  const [disclaimerTypingComplete, setDisclaimerTypingComplete] = useState(false);
   const [systemReqPhase, setSystemReqPhase] = useState(0);
+  const [systemReqComplete, setSystemReqComplete] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
   
@@ -264,6 +268,8 @@ const Index = () => {
   return (
     <>
       <RotationPrompt />
+      <FixedLogo />
+      <SponsorBadge show={currentSlide === 0 && !showVideo} />
       
       <div className="landscape-only min-h-screen bg-background relative overflow-hidden">
         <ParticleBackground />
@@ -305,22 +311,28 @@ const Index = () => {
                 Important Notice
               </h2>
               <div className="text-sm sm:text-base text-foreground/80 leading-relaxed max-h-[40vh] overflow-y-auto pr-4">
-                <TypewriterText text={DISCLAIMER_TEXT} speed={20} />
+                <TypewriterText 
+                  text={DISCLAIMER_TEXT} 
+                  speed={20} 
+                  onComplete={() => setDisclaimerTypingComplete(true)}
+                />
               </div>
-              <div className="flex justify-between pt-6 border-t border-border/20">
-                <button
-                  onClick={prevSlide}
-                  className="px-6 py-3 text-sm font-body uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={nextSlide}
-                  className="px-6 py-3 text-sm font-body uppercase tracking-wider bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors"
-                >
-                  I Understand
-                </button>
-              </div>
+              {disclaimerTypingComplete && (
+                <div className="flex justify-between pt-6 border-t border-border/20 animate-fade-in">
+                  <button
+                    onClick={prevSlide}
+                    className="px-6 py-3 text-sm font-body uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="px-6 py-3 text-sm font-body uppercase tracking-wider bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors"
+                  >
+                    I Understand
+                  </button>
+                </div>
+              )}
             </div>
           </SlideCard>
 
@@ -341,11 +353,16 @@ const Index = () => {
                     <TypewriterText 
                       text={SYSTEM_REQ_TEXT_2} 
                       speed={40}
+                      onComplete={() => setSystemReqComplete(true)}
                     />
                   </div>
                 )}
               </div>
-              <NavigationButtons onPrev={prevSlide} onNext={nextSlide} />
+              {systemReqComplete && (
+                <div className="animate-fade-in">
+                  <NavigationButtons onPrev={prevSlide} onNext={nextSlide} />
+                </div>
+              )}
             </div>
           </SlideCard>
 
