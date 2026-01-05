@@ -11,6 +11,7 @@ import ProgressIndicator from '@/components/ProgressIndicator';
 import RotationPrompt from '@/components/RotationPrompt';
 import { Lock, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import useSoundEffects from '@/hooks/useSoundEffects';
 
 const DISCLAIMER_TEXT = `PLEASE READ CAREFULLY...
 
@@ -19,6 +20,20 @@ Go somewhere quiet and sit peacefully—preferably alone, away from unnecessary 
 Also, keep this very important rule in mind: until you receive your surprise, do not tell anyone about it. Not friends, not family, not that one person who knows everything. You may be disqualified… or who knows, kisi ki nazar lag jaye. We take emotional safety very seriously here.
 
 This gift is just a small reminder of appreciation, gratitude, and the comfort of knowing that our connection is valued. No pressure, no expectations—just something thoughtful, sent with good intent, and a little excitement!`;
+
+const WELCOME_TEXT = `If you're seeing this, then congratulations. That's a rare privilege, carefully curated, strictly limited, and proudly drama-free. Only limited people have access to this.
+
+Now, before we move forward toward the surprise I've been hyping up (yes, the one you're already curious about), there's a tiny but important step. Please read the following disclaimer with patience, good humor, and minimal judgment. It exists purely for fun, suspense, and my own peace of mind.
+
+All set? Great. Let's move forward.`;
+
+const SYSTEM_REQ_TEXT_1 = `If you have read disclaimer and Accept the terms and conditions then continue..
+
+just continue with a smile`;
+
+const SYSTEM_REQ_TEXT_2 = `...................
+
+yeah that one is good`;
 
 const REASON_OPTIONS = [
   { value: 'just_curious', label: 'Just curious' },
@@ -40,6 +55,7 @@ interface FormData {
 const Index = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showVideo, setShowVideo] = useState(true);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     contact: '',
@@ -53,20 +69,51 @@ const Index = () => {
   const [passwordError, setPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showShake, setShowShake] = useState(false);
+  const [welcomeTypingComplete, setWelcomeTypingComplete] = useState(false);
+  const [systemReqPhase, setSystemReqPhase] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
+  
+  const { playClick } = useSoundEffects();
 
   const totalSlides = 11;
 
+  // Start background music after video ends
+  const startBackgroundMusic = useCallback(() => {
+    try {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.play();
+        return;
+      }
+      const audio = new Audio('/bgmusic.mp3');
+      audio.loop = true;
+      audio.volume = 0.12;
+      bgMusicRef.current = audio;
+      audio.play().catch(() => {});
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
-    // Auto-skip video after 100ms if no video source
-    const timer = setTimeout(() => {
-      setShowVideo(false);
-    }, 100);
-    return () => clearTimeout(timer);
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+      }
+    };
   }, []);
 
   const handleVideoEnd = () => {
     setShowVideo(false);
+    startBackgroundMusic();
+  };
+
+  const handleVideoCanPlay = () => {
+    setVideoLoaded(true);
+  };
+
+  const handleSkipVideo = () => {
+    playClick();
+    setShowVideo(false);
+    startBackgroundMusic();
   };
 
   const updateFormData = useCallback((field: keyof FormData, value: string | File | null) => {
@@ -106,19 +153,22 @@ const Index = () => {
   }, [currentSlide, formData]);
 
   const nextSlide = useCallback(() => {
+    playClick();
     if (!validateCurrentSlide()) return;
     if (currentSlide < totalSlides - 1) {
       setCurrentSlide((prev) => prev + 1);
     }
-  }, [currentSlide, validateCurrentSlide]);
+  }, [currentSlide, validateCurrentSlide, playClick]);
 
   const prevSlide = useCallback(() => {
+    playClick();
     if (currentSlide > 0) {
       setCurrentSlide((prev) => prev - 1);
     }
-  }, [currentSlide]);
+  }, [currentSlide, playClick]);
 
   const handleSubmit = useCallback(async () => {
+    playClick();
     if (!validateCurrentSlide()) return;
     
     setIsSubmitting(true);
@@ -158,9 +208,10 @@ const Index = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, validateCurrentSlide]);
+  }, [formData, validateCurrentSlide, playClick]);
 
   const checkPassword = useCallback(() => {
+    playClick();
     if (password === 'Nicetomeetyou') {
       setPasswordError('');
       setCurrentSlide(10);
@@ -169,23 +220,39 @@ const Index = () => {
       setShowShake(true);
       setTimeout(() => setShowShake(false), 400);
     }
-  }, [password]);
+  }, [password, playClick]);
+
+  // Handle system requirements phase transitions
+  const handleSystemReqPhase1Complete = useCallback(() => {
+    setTimeout(() => {
+      setSystemReqPhase(1);
+    }, 3000);
+  }, []);
 
   if (showVideo) {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <video
           ref={videoRef}
-          className="w-full h-full object-cover opacity-20"
+          className={cn(
+            "w-full h-full object-cover transition-opacity duration-500",
+            videoLoaded ? "opacity-40" : "opacity-0"
+          )}
           autoPlay
           muted
           playsInline
           onEnded={handleVideoEnd}
+          onCanPlay={handleVideoCanPlay}
         >
           <source src="/clip.mp4" type="video/mp4" />
         </video>
+        {!videoLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-foreground/30 border-t-foreground/80 rounded-full animate-spin" />
+          </div>
+        )}
         <button
-          onClick={() => setShowVideo(false)}
+          onClick={handleSkipVideo}
           className="absolute bottom-8 right-8 px-6 py-3 rounded-lg bg-secondary/50 text-foreground/70 border border-border/30 font-body text-sm uppercase tracking-wider hover:bg-secondary/70 transition-colors"
         >
           Skip
@@ -208,18 +275,26 @@ const Index = () => {
 
           {/* Slide 0: Welcome */}
           <SlideCard isActive={currentSlide === 0}>
-            <div className="text-center space-y-6">
+            <div className="text-center space-y-6 max-w-xl mx-auto">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-normal text-foreground uppercase tracking-widest">
-                Hello
+                Hey there
               </h1>
-              <p className="text-base text-muted-foreground font-body leading-relaxed max-w-md mx-auto">
-                Hi Aditya, welcome! If you're seeing this, congratulations—you are officially part of my close friends list.
-              </p>
-              <NavigationButtons
-                onNext={nextSlide}
-                showPrev={false}
-                nextLabel="Begin"
-              />
+              <div className="text-sm sm:text-base text-muted-foreground font-body leading-relaxed text-left">
+                <TypewriterText 
+                  text={WELCOME_TEXT} 
+                  speed={25} 
+                  onComplete={() => setWelcomeTypingComplete(true)}
+                />
+              </div>
+              {welcomeTypingComplete && (
+                <div className="animate-fade-in">
+                  <NavigationButtons
+                    onNext={nextSlide}
+                    showPrev={false}
+                    nextLabel="Continue"
+                  />
+                </div>
+              )}
             </div>
           </SlideCard>
 
@@ -249,15 +324,27 @@ const Index = () => {
             </div>
           </SlideCard>
 
-          {/* Slide 2: Smile */}
+          {/* Slide 2: System Requirements */}
           <SlideCard isActive={currentSlide === 2}>
-            <div className="text-center space-y-6">
+            <div className="text-center space-y-6 max-w-lg mx-auto">
               <h2 className="text-2xl sm:text-3xl font-display font-normal text-foreground uppercase tracking-widest">
-                First Things First
+                System Requirements
               </h2>
-              <p className="text-lg text-muted-foreground font-body">
-                Take a moment and smile...
-              </p>
+              <div className="text-sm sm:text-base text-muted-foreground font-body leading-relaxed text-left">
+                <TypewriterText 
+                  text={SYSTEM_REQ_TEXT_1} 
+                  speed={30} 
+                  onComplete={handleSystemReqPhase1Complete}
+                />
+                {systemReqPhase >= 1 && (
+                  <div className="mt-4 animate-fade-in">
+                    <TypewriterText 
+                      text={SYSTEM_REQ_TEXT_2} 
+                      speed={40}
+                    />
+                  </div>
+                )}
+              </div>
               <NavigationButtons onPrev={prevSlide} onNext={nextSlide} />
             </div>
           </SlideCard>
