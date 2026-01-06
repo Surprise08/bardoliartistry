@@ -1,4 +1,4 @@
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/logo.png';
 
 const FixedLogo = () => {
   return (
@@ -6,8 +6,7 @@ const FixedLogo = () => {
       <img 
         src={logo} 
         alt="Logo" 
-        className="w-12 h-12 sm:w-14 sm:h-14 object-contain opacity-80 brightness-150 contrast-125 saturate-0"
-        style={{ filter: 'brightness(1.5) contrast(1.2) saturate(0)' }}
+        className="w-12 h-12 sm:w-14 sm:h-14 object-contain opacity-90 invert"
       />
     </div>
   );
